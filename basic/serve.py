@@ -20,13 +20,11 @@ LLM_MODEL = 'gpt-4o'
 
 llm = ChatOpenAI(model=LLM_MODEL)
 
-def do_chat(input: str):
-  prompt = ChatPromptTemplate.from_messages([
+prompt = ChatPromptTemplate.from_messages([
     ('system', 'You are a helpful assistant.'),
     ('user', '{input}')
-  ])
-  chain = prompt | llm 
-  return chain.invoke({'input': input})
+])
+simple_chat_chain = prompt | llm 
 
 app = FastAPI()
 
@@ -43,7 +41,7 @@ async def chat(request: Request, prompt: Optional[str] = None):
     payload = json.loads(body)
     prompt = payload.get('prompt', '')
 
-  return Response(content=do_chat(prompt).content, media_type='text/plain')  
+  return Response(content=simple_chat_chain.invoke({'input': prompt}).content, media_type='text/plain')  
 
 if __name__ == '__main__':
   import uvicorn

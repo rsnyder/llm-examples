@@ -14,19 +14,14 @@ LLM_MODEL = 'gpt-4o'
 
 llm = ChatOpenAI(model=LLM_MODEL)
 
-def get_chain():
-  prompt = ChatPromptTemplate.from_messages([
+prompt = ChatPromptTemplate.from_messages([
     ('system', 'You are a helpful assistant.'),
     ('user', '{input}')
-  ])
-  chain = prompt | llm 
-  return chain
-
-def do_chat(input: str):
-  return get_chain.invoke({'input': input})
+])
+simple_chat_chain = prompt | llm 
 
 async def generate_chat_events(input):
-  async for evt in get_chain().astream_events(input, version='v1' ):
+  async for evt in simple_chat_chain.astream_events(input, version='v1' ):
     if evt['event'] == 'on_chain_stream':
       chunk = evt['data']['chunk'].content if evt.get('data').get('chunk') else None
       if chunk:
@@ -48,12 +43,10 @@ async def chat(request: Request, prompt: Optional[str] = None, session_id: Optio
     prompt = payload.get('prompt', '')
     stream = payload.get('stream', False)
     
-  print(f'prompt={prompt}, stream={stream}')
-
   if stream:
     return StreamingResponse(generate_chat_events({'input': prompt}), media_type='text/event-stream')
   else:
-    resp = do_chat(prompt)
+    resp = simple_chat_chain.invoke({'input': prompt})
     return Response(content=resp.content, media_type='text/plain')  
 
 if __name__ == '__main__':
