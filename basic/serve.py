@@ -11,7 +11,7 @@ import json
 from typing import Optional
 
 from langchain_openai import ChatOpenAI
-from langchain.schema import SystemMessage, HumanMessage
+from langchain_core.prompts import ChatPromptTemplate
 
 from fastapi import FastAPI, Request
 from fastapi.responses import Response, FileResponse
@@ -20,12 +20,13 @@ LLM_MODEL = 'gpt-4o'
 
 llm = ChatOpenAI(model=LLM_MODEL)
 
-def do_chat(prompt: str):
-  
-  return llm([
-    SystemMessage(content='You are a helpful assistant.'),
-    HumanMessage(content=prompt)
+def do_chat(input: str):
+  prompt = ChatPromptTemplate.from_messages([
+    ('system', 'You are a helpful assistant.'),
+    ('user', '{input}')
   ])
+  chain = prompt | llm 
+  return chain.invoke({'input': input})
 
 app = FastAPI()
 

@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="#791917">
   <meta name="apple-mobile-web-app-title" content="SCHH AI Chatbot">
   <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
-  <title>SCHH AI Chatbot</title>
+  <title>LLM Test Client</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/themes/light.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; }
@@ -103,6 +103,7 @@
     const scrollToBottom = () => chatEl.scrollTop = chatEl.scrollHeight // scroll chat to bottom
     
     const sessionid = Math.random().toString(36).substring(7)
+    const stream = true
     let msgCtr = 0
 
     Math.random().toString(36).substring(7) // generate a random session ID
@@ -135,7 +136,7 @@
       const resp = await fetch(`${apiEndpoint}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, sessionid, stream: true })
+        body: JSON.stringify({ prompt, sessionid, stream })
       })
 
       const reader = resp.body.getReader()

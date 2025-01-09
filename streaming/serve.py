@@ -1,50 +1,42 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import json, secrets
+import json, json
 from typing import Optional
 
 from langchain_openai import ChatOpenAI
-from langchain.schema import SystemMessage, HumanMessage
+from langchain_core.prompts import ChatPromptTemplate
 
 from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse, Response, FileResponse
-from fastapi.middleware.cors import CORSMiddleware
 
 LLM_MODEL = 'gpt-4o'
 
 llm = ChatOpenAI(model=LLM_MODEL)
 
-def do_chat(prompt: str):
-  
-  messages = [
-    SystemMessage(content='You are a helpful assistant.'),
-    HumanMessage(content=prompt)
-  ]
+def get_chain():
+  prompt = ChatPromptTemplate.from_messages([
+    ('system', 'You are a helpful assistant.'),
+    ('user', '{input}')
+  ])
+  chain = prompt | llm 
+  return chain
 
-  return llm(messages)
+def do_chat(input: str):
+  return get_chain.invoke({'input': input})
+
+async def generate_chat_events(input):
+  async for evt in get_chain().astream_events(input, version='v1' ):
+    if evt['event'] == 'on_chain_stream':
+      chunk = evt['data']['chunk'].content if evt.get('data').get('chunk') else None
+      if chunk:
+        yield chunk
 
 app = FastAPI()
 
-# Mount static files
-class CacheControlStaticFiles(StaticFiles):
-  def file_response(self, *args, **kwargs) -> Response:
-    response = super().file_response(*args, **kwargs)
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    return response
-
-app.mount("/static", CacheControlStaticFiles(directory="static"), name="static")
-app.mount('/static', StaticFiles(directory='static'), name='static')
-
-# CORS
-app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
-
 @app.get('/')
 async def root():
-  return FileResponse('index.html')
+  return FileResponse('../index.html')
 
 @app.get('/chat/{prompt}')
 @app.post('/chat')
@@ -54,14 +46,15 @@ async def chat(request: Request, prompt: Optional[str] = None, session_id: Optio
     body = await request.body()
     payload = json.loads(body)
     prompt = payload.get('prompt', '')
-    sessionid = payload.get('sessionid', secrets.token_hex(4))
     stream = payload.get('stream', False)
     
-  print(f'prompt={prompt}, sessionid={sessionid}, stream={stream}')
+  print(f'prompt={prompt}, stream={stream}')
 
-  resp = do_chat(prompt)
-
-  return Response(content=resp.content, media_type='text/plain')  
+  if stream:
+    return StreamingResponse(generate_chat_events({'input': prompt}), media_type='text/event-stream')
+  else:
+    resp = do_chat(prompt)
+    return Response(content=resp.content, media_type='text/plain')  
 
 if __name__ == '__main__':
   import uvicorn
