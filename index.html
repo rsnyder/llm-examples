@@ -75,6 +75,9 @@
 
     // const apiEndpoint = 'https://schh-ai-chatbot.onrender.com'
     const apiEndpoint = ''
+    const sessionid = Math.random().toString(36).substring(7)
+    const stream = true
+    let msgCtr = 0
 
     const chatEl = document.querySelector('.chat-area')
     const drawerEl = document.querySelector('.drawer')
@@ -101,10 +104,6 @@
     const docReady = (fn) => { if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(fn, 1); else document.addEventListener('DOMContentLoaded', fn) }
     
     const scrollToBottom = () => chatEl.scrollTop = chatEl.scrollHeight // scroll chat to bottom
-    
-    const sessionid = Math.random().toString(36).substring(7)
-    const stream = true
-    let msgCtr = 0
 
     Math.random().toString(36).substring(7) // generate a random session ID
     const sendMessage = async (prompt) => {
