@@ -6,13 +6,13 @@ This is a simple FastAPI server that uses the LangGraph to chat with an OpenAI m
 It is a basic streaming example.  It does not include any chat history.
 '''
 
-import json
-from typing import Optional, TypedDict
+import json, secrets
+from typing import Optional
 
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph, MessagesState, START, END
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.messages import HumanMessage
 
 from fastapi import FastAPI, Request
 from fastapi.responses import Response, StreamingResponse, FileResponse
@@ -22,21 +22,18 @@ LLM_MODEL = 'gpt-4o'
 llm = ChatOpenAI(model=LLM_MODEL)
 memory = MemorySaver()
 
-class State(TypedDict):
-    messages: list
-
-def chatbot(state: State):
+def chatbot(state: MessagesState):
     return {'messages': [llm.invoke(state['messages'])]}
 
-graph_builder = StateGraph(State)
+graph_builder = StateGraph(MessagesState)
 graph_builder.add_node('chatbot', chatbot)
 graph_builder.add_edge(START, 'chatbot')
 graph_builder.add_edge('chatbot', END)
 
 graph = graph_builder.compile(checkpointer=memory)
 
-async def generate_chat_events(messages):
-  for msg, metadata in graph.stream({'messages': messages}, stream_mode='messages'):
+async def generate_chat_events(messages, config):
+  for msg, metadata in graph.stream({'messages': messages}, config, stream_mode='messages'):
     if (
         msg.content
         and not isinstance(msg, HumanMessage)
@@ -52,23 +49,22 @@ async def root():
 
 @app.get('/chat/{prompt}')
 @app.post('/chat')
-async def chat(request: Request, prompt: Optional[str] = None, stream: Optional[bool] = False): 
+async def chat(request: Request, prompt: Optional[str] = None, sessionid: Optional[str] = None, stream: Optional[bool] = False): 
   
   if request.method == 'POST':
     body = await request.body()
     payload = json.loads(body)
     prompt = payload.get('prompt', '')
     stream = payload.get('stream', False)
+    sessionid = payload.get('sessionid', secrets.token_hex(4))
 
-  messages = [
-    ('system', 'You are a helpful assistant.'),
-    ('user', prompt)
-  ]
-
+  config = {'configurable': {'thread_id': sessionid}}
+  messages = [{'type': 'user', 'content': prompt}]
+  
   if stream:
-    return StreamingResponse(generate_chat_events(messages), media_type='text/event-stream')
+    return StreamingResponse(generate_chat_events([{'type': 'user', 'content': prompt}], config), media_type='text/event-stream')
   else:
-    return Response(content=graph.invoke({'messages': messages})['messages'][-1].content , media_type='text/plain')  
+    return Response(content=graph.invoke({'messages': messages}, config)['messages'][-1].content , media_type='text/plain')  
 
 if __name__ == '__main__':
   import uvicorn
