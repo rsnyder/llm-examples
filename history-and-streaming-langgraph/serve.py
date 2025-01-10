@@ -3,7 +3,7 @@
 
 '''
 This is a simple FastAPI server that uses the LangGraph to chat with an OpenAI model.
-It is a basic streaming example.  It does not include any chat history.
+It demonstrates streaming with chat history.
 '''
 
 import json, secrets
