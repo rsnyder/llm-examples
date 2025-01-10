@@ -35,7 +35,7 @@ async def root():
 
 @app.get('/chat/{prompt}')
 @app.post('/chat')
-async def chat(request: Request, prompt: Optional[str] = None, session_id: Optional[str] = None, stream: Optional[bool] = False): 
+async def chat(request: Request, prompt: Optional[str] = None, stream: Optional[bool] = False): 
   
   if request.method == 'POST':
     body = await request.body()
