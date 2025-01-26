@@ -6,13 +6,15 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="#791917">
   <meta name="apple-mobile-web-app-title" content="SCHH AI Chatbot">
-  <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
-  <title>LLM Test Client</title>
+  <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
+  <link rel="manifest" href="manifest.json">
+  <title>AI Chatbot</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/themes/light.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     @keyframes fadeInOpacity { 0% { opacity: 0; } 100% { opacity: 1; } }
-    body { font-family: ui-sans-serif, -apple-system, system-ui, Segoe UI, Helvetica, Apple Color Emoji, Arial, sans-serif, Segoe UI Emoji, Segoe UI Symbol; font-size: 1.1em; margin: 0; background-color: #f8f9fa; height: 100dvh; justify-content: center; align-items: center; }
+    body, sl-drawer::part(title) { font-family: ui-sans-serif, -apple-system, system-ui, Segoe UI, Helvetica, Apple Color Emoji, Arial, sans-serif, Segoe UI Emoji, Segoe UI Symbol; }
+    body { font-size: 1.1em; margin: 0; background-color: #f8f9fa; height: 100dvh; justify-content: center; align-items: center; }
     .chat-container { position: relative; width: 100%; max-width: 800px; height: 100dvh; display: flex; flex-direction: column; background: #fff; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); border-radius: 8px; overflow: hidden; margin: 0 auto; }
     .chat-area { padding: .5em; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
     .message { padding: 10px 14px; border-radius: 8px; line-height: 1.5; }
@@ -27,21 +29,34 @@
     .drawer-toggle { fill: white; scale: 80%; }
     .response { margin-right: auto; position: relative; }
     sl-copy-button { position: absolute; right: -22px; bottom: -4px; margin-left: 0.25rem; padding: 0; background-color: inherit; }
-    sl-drawer::part(base) { height: calc(100% - 98px); background-color: }
+    sl-drawer::part(base) { height: calc(100% - 98px); }
+    sl-drawer::part(header) { text-align: center; }
+    sl-drawer::part(title) { font-size: 1.5em; font-weight: bold; }
+    sl-drawer::part(body) { padding-top: 0; }
+    .drawer-content p { font-size: 1.1em; line-height: 1.5; }
+    sl-tab-panel { font-size: 90%; line-height: 1.3; color: #444; }
+    sl-tab-panel > h1 { font-size: 1.5em; }
+    sl-tab-panel > :is(h1, h2, h3, h4, h5, h6) { margin: .5em 0; }
+    sl-tab-panel > :is(h1, h2, h3, h4, h5, h6):first-child, sl-tab-panel > :is(h1, h2, h3, h4, h5, h6):nth-child(2) { margin-top: 0; }
+    sl-tab-panel[name="settings"] > div { border: 1px solid #e9ecef; padding: 1em; border-radius: 8px; }
+    sl-tab-panel::part(base) { padding-top: 0; }
+    sl-tab::part(base) { padding: 0 1em 1em 0; }
+    sl-tab svg { width: 24px; height: 24px; }
+    sl-tab[active] svg { fill: var(--sl-color-primary-600); }
     @media (min-width: 600px) { /* desktop, laptops, wider devices */
       .chat-area { padding: 1em; } 
       .message { max-width: 90%; box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px; }
       .bot-message { border: 1px solid #e9ecef; } 
     }
     sl-button::part(base) { background-color: #791917; border-color: #791917; }
+    #settings { display: flex; flex-direction: column; gap: 0.5em; height: 100%;}
+    .selector { display: flex; gap: 1em; align-items: center; }
   </style>
 </head>
 <body>
 
   <div class="chat-container">
-    <div class="chat-area" id="chat-area">
-      <!-- Chat messages will be dynamically added here -->
-    </div>
+    <div class="chat-area" id="chat-area"></div>
     <div class="input-container">
       <svg class="drawer-toggle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M0 96C0 78.3 14.3 64 32 64l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 128C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 288c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32L32 448c-17.7 0-32-14.3-32-32s14.3-32 32-32l384 0c17.7 0 32 14.3 32 32z"/></svg>
       <sl-textarea
@@ -53,10 +68,32 @@
       <svg class="submit" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM385 215c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-71-71L280 392c0 13.3-10.7 24-24 24s-24-10.7-24-24l0-214.1-71 71c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9L239 103c9.4-9.4 24.6-9.4 33.9 0L385 215z"/></svg>
     </div>
     <div class="advisory">This tool can make mistakes. Check important info.</div>
-    <sl-drawer contained label="About" class="drawer" style="--size: 100%;">
-      Placeholder for information about the SCHH AI Chatbot...
-      <sl-button slot="footer" variant="primary">Close</sl-button>
+    
+    <sl-drawer contained label="AI Chatbot" class="drawer" style="--size: 100%;">
+      <sl-tab-group placement="start">
+        <sl-tab slot="nav" panel="about">
+          <!-- info icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 512">
+            <path d="M48 80a48 48 0 1 1 96 0A48 48 0 1 1 48 80zM0 224c0-17.7 14.3-32 32-32l64 0c17.7 0 32 14.3 32 32l0 224 32 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 512c-17.7 0-32-14.3-32-32s14.3-32 32-32l32 0 0-192-32 0c-17.7 0-32-14.3-32-32z"/>
+          </svg>
+        </sl-tab>
+          <sl-tab slot="nav" panel="settings">
+          <!-- settings (gear) icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">
+            <path d="M82.6,39.8c-0.5-1.8-1.3-3.7-2.3-5.7c1.9-2.6,4.1-5.2,6-8.1c0.6-0.8,0.6-1.7,0-2.6c-2.4-3.5-6.4-7.1-9.7-9.9  c-0.8-0.8-1.9-0.8-2.8-0.1l-8.4,6.2c-1.6-0.8-3.5-1.5-5.2-2.2L58.6,6.8C58.5,5.7,57.7,5,56.5,5h-13c-1.2,0-2,0.7-2.2,1.7  c-0.8,3.4-1.2,7.3-1.6,10.7c-1.8,0.6-3.6,1.3-5.2,2.3l-8.1-6.2c-0.5-0.4-1.2-0.7-1.6-0.7c-2,0-9.8,8.7-11.3,10.6  c-0.8,1-0.7,1.6,0.1,2.7c2.1,2.8,4.2,5.4,6.2,8.1c-0.9,1.9-1.6,3.4-2.2,5.4L6.6,41.2C5.7,41.4,5,42.5,5,43.5v12.9  c0,1,0.7,1.9,1.7,2.1l10.6,1.7c0.5,1.8,1.4,3.7,2.3,5.6c-1.9,2.7-4,5.2-6,8.1c-0.6,0.9-0.5,1.8,0,2.6c2.5,3.5,6.4,7.1,9.7,10  c0.9,0.8,1.9,0.8,2.8,0.2l8.4-6.2c1.7,0.8,3.5,1.5,5.2,2.1l1.6,10.7c0.1,0.9,1,1.8,2.2,1.8h13c1.2,0,1.8-0.7,2.1-1.7  c0.9-3.4,1.3-7.3,1.7-10.7c1.8-0.6,3.6-1.4,5.3-2.2l8.1,6.3c0.5,0.4,1.1,0.5,1.6,0.5c1.9,0,9.8-8.8,11.3-10.7  c0.6-0.8,0.5-1.6-0.2-2.6c-2.1-2.9-4.2-5.5-6.2-8.4c0.9-1.6,1.6-3.2,2.3-5.2l10.7-1.6c1-0.1,1.7-1.2,1.7-2V43.6  c0-0.9-0.7-1.9-1.7-2.2L82.6,39.8z M49.9,65C41.7,65,35,58.3,35,50.1C35,41.7,41.7,35,49.9,35c8.3,0,15,6.7,15,15.1  C64.9,58.3,58.2,65,49.9,65z"></path>
+          </svg>
+        </sl-tab>
+      
+        <sl-tab-panel name="about"></sl-tab-panel>
+        <sl-tab-panel name="settings">
+          <h1>Settings</h1>
+          <div id="settings"></div>
+        </sl-tab-panel>
+      </sl-tab-group>
+      
+      <!-- <sl-button slot="footer" variant="primary">Close</sl-button> -->
     </sl-drawer>
+  
   </div>
 
 
@@ -68,19 +105,23 @@
     import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/components/button/button.js';
     import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/components/copy-button/copy-button.js';
     import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/components/drawer/drawer.js';
+    import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/components/option/option.js';
+    import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/components/select/select.js';
+    import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/components/switch/switch.js';
+    import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/components/tab/tab.js';
+    import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/components/tab-group/tab-group.js';
+    import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/components/tab-panel/tab-panel.js';
     import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/components/textarea/textarea.js';
 
     const inIframe = window.location !== window.parent.location // flag indicating if the page is in an iframe
     const isMobile = ('ontouchstart' in document.documentElement && /mobi/i.test(navigator.userAgent) )
 
-    // const apiEndpoint = 'https://schh-ai-chatbot.onrender.com'
-    const apiEndpoint = ''
-    const sessionid = Math.random().toString(36).substring(7)
-    const stream = true
-    let msgCtr = 0
+    const serviceDomain = 'https://ai-chatbot-fkiv.onrender.com' // the domain hosting the chatbot service
+    const apiEndpoint = location.origin === 'https://ai-chatbot-fkiv.onrender.com' || location.hostname === 'localhost' ? '' : serviceDomain
 
     const chatEl = document.querySelector('.chat-area')
     const drawerEl = document.querySelector('.drawer')
+    const drawerContentEl = document.querySelector('sl-tab-panel[name="about"]')
     const inputEl = document.querySelector('.chat-textarea')
     const submitEl = document.querySelector('.submit')
     const drawerToggleEl = document.querySelector('.drawer-toggle')
@@ -97,13 +138,69 @@
         submitEl.dispatchEvent(new CustomEvent('click'))
       }
     })
-    drawerEl.querySelector('sl-button').addEventListener('click', () => drawerEl.open = false)
+    drawerEl.querySelector('sl-button')?.addEventListener('click', () => drawerEl.open = false)
     drawerToggleEl.addEventListener('click', () => drawerEl.open = !drawerEl.open)
+
+    const getDrawerContent = (path) => {
+      if (!path.endsWith('.md')) path += '.md'
+      fetch(`static/${path}`).then(response => response.text()).then(text => {
+        drawerContentEl.innerHTML = `<a href="about" style="color: #791917; display:${path === 'about.md' ? 'none' : 'block'};">Back</a> ` + marked.parse(text) 
+        drawerContentEl.querySelectorAll('a').forEach(a => {
+          if (new URL(a.href).origin === window.location.origin) {
+            a.addEventListener('click', (e) => {
+              e.preventDefault()
+              getDrawerContent(a.getAttribute('href'))
+            })
+          }
+        })
+      })
+    }
+
+    drawerEl.addEventListener('sl-show', () => getDrawerContent('about'))
+
+    const settingsValues = { 
+      stream: true, 
+      models: [
+        ['gpt-4o-mini', 'GPT 4o Mini'],
+        ['gpt-4o', 'GPT 4o'],
+        ['claude-3-sonnet-20240229', 'Claude 3.5 Sonnet']
+      ],
+      knowledgeBases:[
+        ['schh', 'schh']
+      ] 
+    }
+    const defaultSettings = { stream: true, model: 'gpt-4o-mini', knowledgeBase: 'schh' }
+    let settings = { ...defaultSettings }
+    const updateSettings = () => {
+      settings.stream = drawerEl.querySelector('#stream').checked
+      settings.model = drawerEl.querySelector('#model').value
+      settings.knowledgeBase = drawerEl.querySelector('#knowledgeBase').value
+      localStorage.setItem('settings', JSON.stringify(settings))
+    }
+    const getSettings = () => {
+      const savedSettings = localStorage.getItem('settings')
+      if (savedSettings) settings = { ...defaultSettings, ...JSON.parse(savedSettings) }
+      let settingsEl = drawerEl.querySelector('#settings')
+      let settingsHtml = `<sl-switch id="stream" ${settings.stream ? 'checked' : ''}>Stream response</sl-switch><br/>`
+      settingsHtml += `<div class="selector"><span>Model: </span><sl-select id="model" value="${settings.model}" hoist placement="bottom">`
+      settingsValues.models.forEach(([value, label]) => settingsHtml += `<sl-option value="${value}">${label}</sl-option>`)
+      settingsHtml += `</sl-select></div>`
+      settingsHtml += `<div class="selector"><span>Knowledge base: </span><sl-select id="knowledgeBase" value="${settings.knowledgeBase}" hoist placement="bottom">`
+      settingsValues.knowledgeBases.forEach(([value, label]) => settingsHtml += `<sl-option value="${value}">${label}</sl-option>`)
+      settingsHtml += `</sl-select></div>`
+      settingsEl.innerHTML = settingsHtml
+    } 
+    drawerEl.addEventListener('sl-hide', () => updateSettings())
+    
+    getSettings()
 
     const md2Html = (md) => marked.parse(md).replace(/^\s*<p>/, '').replace(/<\/p>\s*$/, '') // convert markdown to HTML
     const docReady = (fn) => { if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(fn, 1); else document.addEventListener('DOMContentLoaded', fn) }
     
     const scrollToBottom = () => chatEl.scrollTop = chatEl.scrollHeight // scroll chat to bottom
+    
+    const sessionid = Math.random().toString(36).substring(7)
+    let msgCtr = 0
 
     Math.random().toString(36).substring(7) // generate a random session ID
     const sendMessage = async (prompt) => {
@@ -135,7 +232,7 @@
       const resp = await fetch(`${apiEndpoint}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, sessionid, stream })
+        body: JSON.stringify({...{ prompt, sessionid }, ...settings})
       })
 
       const reader = resp.body.getReader()
